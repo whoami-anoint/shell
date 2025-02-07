@@ -60,6 +60,7 @@ jobs:
       - name: Configure ngrok
         run: ngrok config add-authtoken $NGROK_AUTHTOKEN
       - name: Run ngrok
-        run: ngrok http http://localhost:8080
+        run: |
+          ngrok http http://localhost:8080 | tee ngrok_output.txt
       - name: Run sshx
         run: curl -sSf https://sshx.io/get | sh -s run
