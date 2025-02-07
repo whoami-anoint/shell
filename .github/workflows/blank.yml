@@ -1,3 +1,4 @@
+
 name: CI
 on: push
 
@@ -8,8 +9,6 @@ jobs:
       NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
     steps:
       - uses: actions/checkout@v3
-
-      # Install Docker and Docker Compose
       - name: Install Docker and Docker Compose
         run: |
           # Install Docker
@@ -17,18 +16,15 @@ jobs:
           sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-          sudo apt-get remove containerd.io
-          sudo apt install docker.io docker-compose -y
-          sudo systemctl start docker
-          sudo systemctl enable docker
-
+          sudo apt update
+          sudo apt install -y docker.io
+          # Install Docker Compose
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
           # Add current user to the docker group
           sudo usermod -aG docker $USER
-
           # Prompt user to log out and log back in to apply group membership changes
           echo "Please log out and log back in to apply group membership changes."
-
-      # Create Docker Compose configuration
       - name: Create Docker Compose configuration
         run: |
           echo "version: '3'" > docker-compose.yml
@@ -40,31 +36,21 @@ jobs:
           echo "    environment:" >> docker-compose.yml
           echo "      GITLAB_OMNIBUS_CONFIG: |" >> docker-compose.yml
           echo "        external_url 'http://localhost'" >> docker-compose.yml
-          echo "        gitlab_rails['gitlab_shell_ssh_port'] = 22" >> docker-compose.yml
-          echo "        gitlab_rails['gitlab_shell_ssh_host'] = 'localhost'" >> docker-compose.yml
           echo "    ports:" >> docker-compose.yml
           echo "      - '80:80'" >> docker-compose.yml
           echo "    volumes:" >> docker-compose.yml
           echo "      - /srv/gitlab/config:/etc/gitlab" >> docker-compose.yml
           echo "      - /srv/gitlab/logs:/var/log/gitlab" >> docker-compose.yml
           echo "      - /srv/gitlab/data:/var/opt/gitlab" >> docker-compose.yml
-
-      # Create volumes
       - name: Create volumes
         run: |
           sudo mkdir -p /srv/gitlab/config
           sudo mkdir -p /srv/gitlab/logs
           sudo mkdir -p /srv/gitlab/data
-
-      # Run Docker Compose
       - name: Run Docker Compose
         run: docker-compose up -d
-
-      # Wait for Docker Compose to start
       - name: Wait for Docker Compose to start
         run: sleep 30
-
-      # Run GitLab container
       - name: Run GitLab container
         run: |
           docker run --detach \
@@ -74,25 +60,17 @@ jobs:
             --volume /srv/gitlab/logs:/var/log/gitlab \
             --volume /srv/gitlab/data:/var/opt/gitlab \
             gitlab/gitlab-ce:latest
-
-      # Wait for GitLab container to start
       - name: Wait for GitLab container to start
         run: sleep 30
-
-      # Install ngrok
-      - run: |
-        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-          | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
-          | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install ngrok
-
-      # Configure ngrok with authtoken from GitHub secret
-      - run: ngrok config add-authtoken $NGROK_AUTHTOKEN
-
-      # Start ngrok
-      - run: ngrok http 80 &
-
-      # Install SSHX
-      - run: curl -sSf https://sshx.io/get | sh -s run
-
-      # Start SSHX
-      - run: sshx run &
+      - name: Install ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt-get update
+          sudo apt-get install ngrok
+      - name: Configure ngrok
+        run: ngrok config add-authtoken $NGROK_AUTHTOKEN
+      - name: Run ngrok
+        run: ngrok http http://localhost
+      - name: Run sshx
+        run: curl -sSf https://sshx.io/get | sh -s run
