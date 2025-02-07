@@ -11,7 +11,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y docker.io docker-compose
+          sudo apt upgrade -y
+          sudo apt install -y docker.io containerd.io
           sudo systemctl start docker
           sudo systemctl enable docker
       - name: Create Docker Compose configuration
