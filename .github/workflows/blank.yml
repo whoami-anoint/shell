@@ -8,6 +8,12 @@ jobs:
       NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
     steps:
       - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y docker.io docker-compose
+          sudo systemctl start docker
+          sudo systemctl enable docker
       - name: Install ngrok
         run: |
           curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
@@ -16,5 +22,7 @@ jobs:
           sudo apt install ngrok
       - name: Configure ngrok
         run: ngrok config add-authtoken $NGROK_AUTHTOKEN
+      - name: Run Docker Compose
+        run: docker-compose up -d
       - name: Run sshx
         run: curl -sSf https://sshx.io/get | sh -s run
