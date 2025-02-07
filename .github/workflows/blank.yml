@@ -1,3 +1,4 @@
+
 name: CI
 on: push
 
@@ -8,7 +9,7 @@ jobs:
       NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install Docker
+      - name: Install Docker and Docker Compose
         run: |
           # Install Docker
           sudo apt update
@@ -18,14 +19,38 @@ jobs:
           sudo apt update -y
           sudo apt remove containerd.io
           sudo apt install -y docker.io
-      - name: Pull Jenkins image
-        run: docker pull jenkins/jenkins
-      - name: Run Jenkins container
-        run: docker run -d -p 8080:8080 -v /srv/jenkins:/var/jenkins_home --name jenkins jenkins/jenkins
+          # Install Docker Compose
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          # Add current user to the docker group
+          sudo usermod -aG docker $USER
+          # Prompt user to log out and log back in to apply group membership changes
+          echo "Please log out and log back in to apply group membership changes."
+      - name: Create Docker Compose configuration
+        run: |
+          echo "version: '3'" > docker-compose.yml
+          echo "services:" >> docker-compose.yml
+          echo "  gitlab:" >> docker-compose.yml
+          echo "    image: 'gitlab/gitlab-ce:latest'" >> docker-compose.yml
+          echo "    restart: always" >> docker-compose.yml
+          echo "    hostname: 'localhost'" >> docker-compose.yml
+          echo "    environment:" >> docker-compose.yml
+          echo "      GITLAB_OMNIBUS_CONFIG: |" >> docker-compose.yml
+          echo "        external_url 'http://localhost:8080'" >> docker-compose.yml
+          echo "    ports:" >> docker-compose.yml
+          echo "      - '8080:80'" >> docker-compose.yml
+          echo "    volumes:" >> docker-compose.yml
+          echo "      - /srv/gitlab/config:/etc/gitlab" >> docker-compose.yml
+          echo "      - /srv/gitlab/logs:/var/log/gitlab" >> docker-compose.yml
+          echo "      - /srv/gitlab/data:/var/opt/gitlab" >> docker-compose.yml
       - name: Create volumes
         run: |
-          sudo mkdir -p /srv/jenkins
-      - name: Wait for Jenkins to start
+          sudo mkdir -p /srv/gitlab/config
+          sudo mkdir -p /srv/gitlab/logs
+          sudo mkdir -p /srv/gitlab/data
+      - name: Run Docker Compose
+        run: docker-compose up -d
+      - name: Wait for Docker Compose to start
         run: sleep 30
       - name: Install ngrok
         run: |
