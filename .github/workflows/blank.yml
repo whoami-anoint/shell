@@ -16,7 +16,11 @@ jobs:
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
           sudo apt update
-          sudo apt install -y docker.io
+          sudo apt install -y docker.io containerd.io
+          sudo apt-mark unhold containerd.io
+          sudo apt install -y containerd.io --allow-unauthenticated
+          sudo systemctl start docker
+          sudo systemctl enable docker
 
           # Install Docker Compose
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -69,12 +73,4 @@ jobs:
       - name: Install ngrok
         run: |
           curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-          sudo apt-get update
-          sudo apt-get install ngrok
-      - name: Configure ngrok
-        run: ngrok config add-authtoken $NGROK_AUTHTOKEN
-      - name: Run ngrok
-        run: ngrok http http://localhost
-      - name: Run sshx
-        run: curl -sSf https://sshx.io/get | sh -s run
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster
