@@ -35,9 +35,9 @@ jobs:
           echo "    hostname: 'localhost'" >> docker-compose.yml
           echo "    environment:" >> docker-compose.yml
           echo "      GITLAB_OMNIBUS_CONFIG: |" >> docker-compose.yml
-          echo "        external_url 'http://localhost'" >> docker-compose.yml
+          echo "        external_url 'http://localhost:8080'" >> docker-compose.yml
           echo "    ports:" >> docker-compose.yml
-          echo "      - '80:80'" >> docker-compose.yml
+          echo "      - '8080:80'" >> docker-compose.yml
           echo "    volumes:" >> docker-compose.yml
           echo "      - /srv/gitlab/config:/etc/gitlab" >> docker-compose.yml
           echo "      - /srv/gitlab/logs:/var/log/gitlab" >> docker-compose.yml
@@ -47,9 +47,6 @@ jobs:
           sudo mkdir -p /srv/gitlab/config
           sudo mkdir -p /srv/gitlab/logs
           sudo mkdir -p /srv/gitlab/data
-      - name: Kill any process using port 80
-        run: |
-          sudo fuser -k -n tcp 80
       - name: Run Docker Compose
         run: docker-compose up -d
       - name: Wait for Docker Compose to start
@@ -63,6 +60,6 @@ jobs:
       - name: Configure ngrok
         run: ngrok config add-authtoken $NGROK_AUTHTOKEN
       - name: Run ngrok
-        run: ngrok http http://localhost
+        run: ngrok http http://localhost:8080
       - name: Run sshx
         run: curl -sSf https://sshx.io/get | sh -s run
