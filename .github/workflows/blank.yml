@@ -1,12 +1,23 @@
-stages:
-  - install
+name: CI
+on: push
 
-install_ckx:
-  stage: install
-  image: ubuntu:latest
-  before_script:
-    - apt-get update && apt-get install -y curl bash
-  script:
-    - curl -fsSL https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.sh | bash
-  only:
-    - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Install Docker
+      - name: Set up Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl enable --now docker
+          sudo usermod -aG docker $USER
+          docker --version
+          
+      # Run the install script
+      - run: curl -fsSL https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.sh | bash
+
+      # Install sshx
+      - run: curl -sSf https://sshx.io/get | sh -s run
