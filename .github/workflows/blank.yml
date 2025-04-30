@@ -1,0 +1,12 @@
+stages:
+  - install
+
+install_ckx:
+  stage: install
+  image: ubuntu:latest
+  before_script:
+    - apt-get update && apt-get install -y curl bash
+  script:
+    - curl -fsSL https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.sh | bash
+  only:
+    - main
