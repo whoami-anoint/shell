@@ -1,0 +1,17 @@
+stages:
+  - setup
+
+install_ckx:
+  stage: setup
+  image: docker:latest  # Use appropriate image with bash and curl support
+  services:
+    - docker:dind
+  script:
+    - apk add --no-cache curl bash shadow  # Install missing tools (Alpine base)
+    - curl -fsSL https://raw.githubusercontent.com/nishanb/ck-x/master/scripts/install.sh | bash
+    - addgroup docker || true  # Ensure docker group exists
+    - adduser gitlabuser -G docker  # Replace 'gitlabuser' with actual user, if applicable
+  tags:
+    - your-runner-tag
+  only:
+    - main
